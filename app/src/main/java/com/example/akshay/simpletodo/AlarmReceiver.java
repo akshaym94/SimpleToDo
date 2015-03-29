@@ -16,7 +16,7 @@ public class AlarmReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        long id = intent.getLongExtra("id", 0);
+        long id = intent.getIntExtra("id", 0);
         String msg = intent.getStringExtra("msg");
 
         NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(context)

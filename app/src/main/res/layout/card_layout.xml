@@ -41,4 +41,14 @@
         android:layout_below="@id/todo_text"
         android:layout_toRightOf="@id/reminder_button"
         android:layout_toEndOf="@id/reminder_button"/>
+
+    <Button
+        android:id="@+id/delete_alarm"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_below="@id/todo_text"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentRight="true"
+        android:background="@android:drawable/ic_menu_delete"
+        android:visibility="gone"/>
 </RelativeLayout>

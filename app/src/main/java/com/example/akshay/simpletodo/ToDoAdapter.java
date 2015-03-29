@@ -1,11 +1,14 @@
 package com.example.akshay.simpletodo;
 
+import android.app.AlarmManager;
+import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.TextView;
@@ -29,12 +32,14 @@ public class ToDoAdapter extends RecyclerView.Adapter<ToDoAdapter.ViewHolder> {
         public TextView mTextView;
         public CheckBox mCheckBox;
         public TextView reminderView;
+        public Button deleteAlarm;
 
         public ViewHolder(View v) {
             super(v);
             mTextView = (TextView)v.findViewById(R.id.todo_text);
             mCheckBox = (CheckBox)v.findViewById(R.id.todo_check_box);
             reminderView = (TextView)v.findViewById(R.id.reminder_time);
+            deleteAlarm = (Button)v.findViewById(R.id.delete_alarm);
         }
     }
 
@@ -52,12 +57,13 @@ public class ToDoAdapter extends RecyclerView.Adapter<ToDoAdapter.ViewHolder> {
     }
 
     @Override
-    public void onBindViewHolder(ViewHolder holder, final int position) {
+    public void onBindViewHolder(final ViewHolder holder, final int position) {
         //setup the UI of card
         Item item = mDataset.get(position);
         holder.mTextView.setText(item.getText());
         holder.mCheckBox.setChecked(item.getStatus());
         if (item.reminderOn == 1) {
+            holder.deleteAlarm.setVisibility(View.VISIBLE);
             holder.reminderView.setText(getDateTime(item.getReminderDate()));
         } else {
             holder.reminderView.setText("Reminder not set");
@@ -68,6 +74,13 @@ public class ToDoAdapter extends RecyclerView.Adapter<ToDoAdapter.ViewHolder> {
                 if(buttonView.isPressed()) {
                     MainActivity.mDataSet.get(position).setStatus(isChecked);
                     MainActivity.DB.updateItem(MainActivity.mDataSet.get(position));
+                    // cancel the alarm
+                    Intent i = new Intent(mContext, AlarmReceiver.class);
+                    i.putExtra("id", mDataset.get(position).getId());
+                    i.putExtra("msg", mDataset.get(position).getText());
+                    PendingIntent pi = PendingIntent.getBroadcast(mContext, 0, i, PendingIntent.FLAG_UPDATE_CURRENT);
+                    AlarmManager am = (AlarmManager) mContext.getSystemService(Context.ALARM_SERVICE);
+                    am.cancel(pi);
                 }
             }
         });
@@ -76,6 +89,26 @@ public class ToDoAdapter extends RecyclerView.Adapter<ToDoAdapter.ViewHolder> {
             @Override
             public void onClick(View v) {
                 mContext.sendBroadcast(new Intent("show.date_time.dialog").putExtra("position", position));
+            }
+        });
+
+        holder.deleteAlarm.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(mDataset.get(position).getReminderOn() == 1) {
+                    MainActivity.mDataSet.get(position).setReminderOn(0);
+                    MainActivity.DB.updateItem(MainActivity.mDataSet.get(position));
+                    holder.reminderView.setText("Reminder not set");
+                    v.setVisibility(View.GONE);
+
+                    // cancel the alarm
+                    Intent i = new Intent(mContext, AlarmReceiver.class);
+                    i.putExtra("id", mDataset.get(position).getId());
+                    i.putExtra("msg", mDataset.get(position).getText());
+                    PendingIntent pi = PendingIntent.getBroadcast(mContext, 0, i, PendingIntent.FLAG_UPDATE_CURRENT);
+                    AlarmManager am = (AlarmManager) mContext.getSystemService(Context.ALARM_SERVICE);
+                    am.cancel(pi);
+                }
             }
         });
     }

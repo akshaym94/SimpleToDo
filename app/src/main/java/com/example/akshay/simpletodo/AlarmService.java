@@ -6,9 +6,14 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.database.Cursor;
 import android.util.Log;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.Locale;
 
 /**
  * Created by Akshay on 28-03-2015.
@@ -33,17 +38,33 @@ public class AlarmService extends IntentService {
     @Override
     protected void onHandleIntent(Intent intent) {
         String action = intent.getAction();
-        String notificationId = intent.getStringExtra("notificationId");
 
         if (matcher.matchAction(action)) {
-            execute(action, notificationId);
+            execute();
         }
     }
 
-    private void execute(String action, String notificationId) {
-        Log.d("Alarm", "Started all alarms");
+    private void execute() {
+        Log.d("Alarm", "Started alarm service");
         AlarmManager am = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
-        ArrayList<Item> alarms = new ToDoDataSource(getApplicationContext()).getAlarms();
+        ArrayList<Item> alarms = new ArrayList<Item>();
+        DBHelper db = new DBHelper(this);
+        db.getWritableDatabase().rawQuery("UPDATE " + DBHelper.TABLE_NAME + " SET " + DBHelper.REMINDERON + "=0 WHERE " + DBHelper.REMINDER + " <= Datetime(" + DBHelper.getDateTime(new Date())+ ");", null).close();
+        Log.d("Alarm", "Disabling old alarms.");
+        Cursor cursor = db.getReadableDatabase().rawQuery("SELECT * FROM " + DBHelper.TABLE_NAME + " WHERE " + DBHelper.REMINDERON + "=1", null);
+        cursor.moveToFirst();
+        while (!cursor.isAfterLast()) {
+            Item item = new Item();
+            item.setId(cursor.getInt(0));
+            item.setText(cursor.getString(1));
+            item.setStatus(cursor.getInt(2) == 1);
+            item.setReminderDate(DBHelper.getDateFromString(cursor.getString(3)));
+            item.setReminderOn(cursor.getInt(4));
+            alarms.add(item);
+            cursor.moveToNext();
+        }
+        // make sure to close the cursor
+        cursor.close();
         for(Item alarm : alarms) {
             Log.d("AlarmService", "Setting alarm for item id:" + alarm.getId());
             Intent i = new Intent(this, AlarmReceiver.class);

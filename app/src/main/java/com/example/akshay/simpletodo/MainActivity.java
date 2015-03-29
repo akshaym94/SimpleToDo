@@ -44,17 +44,21 @@ public class MainActivity extends ActionBarActivity {
     static ArrayList<Item> mDataSet;
     private View addLayout;
     private EditText newItem;
+    BroadcastReceiver mBroadcastReceiver;
 
     @Override
     protected void onResume() {
         DB.open();
         super.onResume();
+        if(mBroadcastReceiver != null)
+            registerReceiver(mBroadcastReceiver, new IntentFilter("show.date_time.dialog"));
     }
 
     @Override
     protected void onPause() {
         DB.close();
         super.onPause();
+        unregisterReceiver(mBroadcastReceiver);
     }
 
     @Override
@@ -65,6 +69,9 @@ public class MainActivity extends ActionBarActivity {
         //Make database connection
         DB = new ToDoDataSource(this);
         DB.open();
+
+        //disable completed alarms
+        DB.removeCompletedAlarms();
 
         new AsyncTask<Void, Void, ArrayList<Item>>() {
 
@@ -132,7 +139,7 @@ public class MainActivity extends ActionBarActivity {
 
         //setup broadcast receiver to show datetime dialog and the datetime listener
 
-        BroadcastReceiver mBroadcastReceiver = new BroadcastReceiver() {
+        mBroadcastReceiver = new BroadcastReceiver() {
 
             @Override
             public void onReceive(Context context, Intent intent) {
